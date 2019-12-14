@@ -41,31 +41,43 @@ app.get('/getItems', (request, response) => {
     let offset = request.query.page;
     let params = [product, offset];
 
-    const query = "SELECT * from Products p where p.product_name ilike $1 limit 10 offset $2";
+    const query = "select * from Products p where p.product_name ilike $1 limit 10 offset $2";
 
     client
         .query(query, params)
         .then(res => {
-            let items = res.rows;
+            let listOfProducts = res.rows;
+
+            /*
+                Context: database returns images in the form of an array of url strings
+
+                For the purpose of this project, extracting the first url of the array
+                to retrun.
+            */
             for (var i = 0; i < items.length; i++) {
-                items[i]['image'] = JSON.parse(items[i]['image']);
-                items[i]['image'] = items[i]['image'][0];
+                listOfProducts[i]['image'] = JSON.parse(listOfProducts[i]['image']);
+                listOfProducts[i]['image'] = listOfProducts[i]['image'][0];
             }
 
             response.status(200);
-            response.send(items);
+            response.send(listOfProducts);
         });
 });
 
 
-// Route 2: /pastOrders?token=<token>
+// Route 2: /pastOrders
 app.get('/pastOrders', (request, response) => {
     
-    let token = request.query.token;
-    params = [token];
-    let query = "select p.product_name , p.retail_price , p.image  from Products p inner join Orders o" +
-        " on o.user_id = $1 and o.product_id = p.id ";   
+    //let token = request.cookie.token;
+    //console.log(token);
+    //params = [token];
+    let query = "select p.product_name , p.retail_price , p.image  from Products p inner" +
+        " join Orders o on o.user_id = $1 and o.product_id = p.id ";   
 
+    response.status(200);
+    response.send("hey");
+
+    /*
     client
         .query(query, params)
         .then(res => {
@@ -73,7 +85,7 @@ app.get('/pastOrders', (request, response) => {
             response.status(200);
             response.send(userOrders);
         });  
-
+    */
 });
 
 
