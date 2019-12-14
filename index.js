@@ -4,9 +4,13 @@
 const express = require('express');
 const cache = require('memory-cache');
 const { Client } = require('pg');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
 const config = require('./config.json');
-const app = express();
 
+const app = express();
+app.use(cookieParser())
+app.use(bodyParser());
 /*  
     Establish connection to the database.
 */
@@ -32,7 +36,6 @@ var server = app.listen(config.PORT || 8080, () => {
         console.log('Listening on default port');
 });
 
-
 // Route 1: /getItems?productName=<name>&page=<number>
 app.get('/getItems', (request, response) => {
     
@@ -42,6 +45,8 @@ app.get('/getItems', (request, response) => {
     let params = [product, offset];
 
     const query = "select * from Products p where p.product_name ilike $1 limit 10 offset $2";
+
+    console.log()
 
     client
         .query(query, params)
@@ -54,7 +59,7 @@ app.get('/getItems', (request, response) => {
                 For the purpose of this project, extracting the first url of the array
                 to retrun.
             */
-            for (var i = 0; i < items.length; i++) {
+            for (var i = 0; i < listOfProducts.length; i++) {
                 listOfProducts[i]['image'] = JSON.parse(listOfProducts[i]['image']);
                 listOfProducts[i]['image'] = listOfProducts[i]['image'][0];
             }
@@ -68,16 +73,12 @@ app.get('/getItems', (request, response) => {
 // Route 2: /pastOrders
 app.get('/pastOrders', (request, response) => {
     
-    //let token = request.cookie.token;
-    //console.log(token);
-    //params = [token];
+    let token = request.headers.cookie;
+    console.log(token);  // remove later
+    params = [token];
     let query = "select p.product_name , p.retail_price , p.image  from Products p inner" +
         " join Orders o on o.user_id = $1 and o.product_id = p.id ";   
-
-    response.status(200);
-    response.send("hey");
-
-    /*
+    
     client
         .query(query, params)
         .then(res => {
@@ -85,9 +86,60 @@ app.get('/pastOrders', (request, response) => {
             response.status(200);
             response.send(userOrders);
         });  
-    */
+    
 });
 
+// Route 3: /logIn : from body: token=<unique>&name=<name>
+app.post('/logIn',  (request, response) => {
+
+    let userToken = request.body.token;
+    let userName = request.body.name;
+    params = [userToken, userName];
+    let query = "insert into users(unique_id, name) values($1, $2) " +
+        "on conflict do nothing";
+    
+    client
+        .query(query, params)
+        .then((err, res) => {
+            if (!err) {
+                response.status(404);
+                response.send("illegal query");
+                return;
+
+            }
+            response.status(200);
+            response.send();
+        });   
+
+});
+
+// Route 4: /placeOrder : from body: token=<unique>&name=<name>
+app.post('/placeOrder',  (request, response) => {
+
+    response.status(200);
+    response.send("message");
+    
+    console.log('body: ', request.body);
+    let userToken = request.body.token;
+    let userProduct = request.body.product;
+    params = [userToken, userProduct];
+    let query = "insert into orders(user_id, product_id) values($1, $2) " +
+        "on conflict do nothing";
+
+    client
+        .query(query, params)
+        .then((err, res) => {
+            if (!err) {
+                response.status(404);
+                response.send("Illegal query");
+                return;
+            }
+
+            response.status(200);
+            response.send();
+        });   
+
+});
 
 
 
