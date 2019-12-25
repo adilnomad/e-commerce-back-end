@@ -7,6 +7,9 @@ const { Client } = require('pg');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const config = require('./config.json');
+const { OAuth2Client } = require('google-auth-library');
+const oath = new OAuth2Client(config.CLIENT_ID);
+
 
 const app = express();
 app.use(cookieParser())
@@ -34,6 +37,15 @@ var server = app.listen(config.PORT || 8080, () => {
         console.log('Listening on port ' + config.PORT);
     else
         console.log('Listening on default port');
+});
+
+
+// Route 0: test ping
+app.get('/' , (request, response)  => {  
+
+    response.status(200);
+    response.json("Successfull ping!");
+
 });
 
 // Route 1: /getItems?productName=<name>&page=<number>
@@ -72,7 +84,7 @@ app.get('/getItems', (request, response) => {
 
 // Route 2: /pastOrders
 app.get('/pastOrders', (request, response) => {
-    
+        
     let token = request.headers.cookie;
     console.log(token);  // remove later
     params = [token];
@@ -90,10 +102,18 @@ app.get('/pastOrders', (request, response) => {
 });
 
 // Route 3: /logIn : from body: token=<unique>&name=<name>
-app.post('/logIn',  (request, response) => {
+app.post('/logIn', async (request, response) => {
+
 
     let userToken = request.body.token;
+    console.log(userToken);
+    console.log("");
+    console.log("");
     let userName = request.body.name;
+    console.log(userName);
+    userToken = await verify(userToken);
+
+    console.log("milestone two");
     params = [userToken, userName];
     let query = "insert into users(unique_id, name) values($1, $2) " +
         "on conflict do nothing";
@@ -119,7 +139,6 @@ app.post('/placeOrder',  (request, response) => {
     response.status(200);
     response.send("message");
     
-    console.log('body: ', request.body);
     let userToken = request.body.token;
     let userProduct = request.body.product;
     params = [userToken, userProduct];
@@ -142,11 +161,19 @@ app.post('/placeOrder',  (request, response) => {
 });
 
 
+ async function verify(token) {
 
+      const ticket = await oath.verifyIdToken({
+          idToken: token,
+          audience: config.CLIENT_ID,  
+        });
 
+      const payload = ticket.getPayload();
+      const userid = payload['sub'];
+      console.log(userid);
+      return userid;
 
-
-
+}
 
 
 
