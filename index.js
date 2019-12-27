@@ -51,6 +51,7 @@ app.get('/' , (request, response)  => {
 // Route 1: /getItems?productName=<name>&page=<number>
 app.get('/getItems', (request, response) => {
     
+    console.log("ping items!");
     let product = request.query.productName;
     product = '%' + product + '%';
     let offset = request.query.page;
@@ -77,6 +78,8 @@ app.get('/getItems', (request, response) => {
             }
 
             response.status(200);
+            response.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+            console.log('ping 2');
             response.send(listOfProducts);
         });
 });
@@ -106,9 +109,7 @@ app.post('/logIn', async (request, response) => {
 
 
     let userToken = request.body.token;
-    console.log(userToken);
-    console.log("");
-    console.log("");
+ 
     let userName = request.body.name;
     console.log(userName);
     userToken = await verify(userToken);
@@ -133,7 +134,7 @@ app.post('/logIn', async (request, response) => {
 
 });
 
-// Route 4: /placeOrder : from body: token=<unique>&name=<name>
+// Route 4: /placeOrder : from body: token=<unique>&product=<product_id>
 app.post('/placeOrder',  (request, response) => {
 
     response.status(200);
@@ -161,7 +162,7 @@ app.post('/placeOrder',  (request, response) => {
 });
 
 
- async function verify(token) {
+async function verify(token) {
 
       const ticket = await oath.verifyIdToken({
           idToken: token,
